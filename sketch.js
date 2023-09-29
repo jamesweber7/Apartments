@@ -11,7 +11,8 @@ const WINDOW_HEIGHT = 30;
 const GAP_WIDTH = 10;
 const GAP_HEIGHT = 25;
 
-var sizeScale = 0.75;
+// var sizeScale = 0.75;
+var sizeScale = 0.35;
 const MIN_SIZE_SCALE = 0.35;
 const MAX_SIZE_SCALE = 1.5;
 
@@ -31,6 +32,8 @@ let windowTypeY;
 const LINE_HEIGHT = 5;
 
 let windowImage;
+let imageThreshold = undefined;
+let img;
 
 let pixelatedCharacters;
 let specialCharIndexes;
@@ -39,7 +42,6 @@ let charStack;
 const SLIDER_WIDTH = 80;
 
 function preload() {
-  // windowImage = loadImage("assets/palm-trees-sky.jpg");
   for (let i = 0; i < NUMBER_OF_ANIMATIONS; i++) {
     windowAnimations[i] = new WindowAnimation(i);
   }
@@ -63,6 +65,32 @@ function setup() {
   }
 
   initializeValues();
+  if (document.getElementById('upload-img') && document.getElementById('upload-input')) {
+    const upload = document.getElementById('upload-img');
+    upload.style.left = `${width - SLIDER_WIDTH / 2 - upload.width / 2}px`;
+    upload.style.top = `${height*0.925 - SLIDER_WIDTH / 2 - upload.height / 2}px`;
+
+    const upload_input = document.getElementById('upload-input');
+
+    upload.onclick = () => {
+      upload_input.click();
+    }
+    upload_input.onchange = () => {
+      if (upload_input.files.length) {
+        const file = upload_input.files[0];
+        
+        const preview = document.getElementById('invisible-img');
+        preview.src = URL.createObjectURL(file);
+        preview.onload = function() {
+          img = loadImage(preview.src, () => {
+            loadWindowsToImage(img, imageThreshold);
+            URL.revokeObjectURL(preview.src);  // Free memory
+          });
+        }
+      }
+    }
+  }
+
 }
 
 function initializeValues() {
@@ -89,7 +117,6 @@ function initializeValues() {
   endX = startX + (width/xIncrement - 2)*xIncrement;
   endY = startY + (height/yIncrement - 1)*yIncrement;
 
-  // loadWindowsToImage(windowImage, 255);
   charStack = [];
 }
 
@@ -103,6 +130,7 @@ function draw() {
   }
   
   drawSlider();
+  drawImageSlider();
 }
 
 function shuffleWindows() {
@@ -127,6 +155,7 @@ function mousePressed() {
         return windows[i][j].toggle();
 
   moveSlider();
+  moveImageSlider();
 }
 
 function mouseDragged() {
@@ -135,21 +164,68 @@ function mouseDragged() {
   if (!mouseIsPressed)
     return;
   moveSlider();
+  moveImageSlider();
 }
 
-function loadWindowsToImage(image, brightLine) {
-
-  if (!validParameter(brightLine)) {
-    brightLine = 50;
-  }
-
+function loadWindowsToImage(image, brightLine=undefined) {
   let imgWidth = image.width;
   let imgHeight = image.height;
+  let imgAspectRatio = imgWidth / imgHeight;
+
+  let screenWidth = xIncrement * windows[0].length;
+  let screenHeight = yIncrement * windows.length;
+  let screenAspectRatio = screenWidth / screenHeight;
+
+  let windows_x_start, windows_x_end;
+  let windows_y_start, windows_y_end;
+  if (imgAspectRatio < screenAspectRatio) {
+    windows_y_start = 0;
+    windows_y_end = windows.length;
+
+    let num_windows_x = floor(windows[0].length / imgAspectRatio);
+    if (num_windows_x % 2 != windows[0].length % 2)
+      num_windows_x ++;
+    
+    windows_x_start = windows[0].length / 2 - num_windows_x / 2;
+    windows_x_end = windows[0].length / 2 + num_windows_x / 2;
+  } else {
+    windows_x_start = 0;
+    windows_x_end = windows[0].length;
+
+    let num_windows_y = floor(windows.length / imgAspectRatio);
+    if (num_windows_y % 2 != windows.length % 2)
+      num_windows_y ++;
+    
+    windows_y_start = windows.length / 2 - num_windows_y / 2;
+    windows_y_end = windows.length / 2 + num_windows_y / 2;
+  }
+
+
+  if (!brightLine) {
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < windows.length / 10; i++) {
+      for (let j = 0; j < windows[i].length / 10; j++) {
+        let c = image.get(j*imgWidth/windows[i].length, i*imgHeight/windows.length);
+        n++;
+        sum += alpha(c)/255 * (red(c) + blue(c) + green(c));
+      }
+    }
+    brightLine = sum / n;
+  }
   for (let i = 0; i < windows.length; i++) {
     for (let j = 0; j < windows[i].length; j++) {
-      let c = image.get(j*imgWidth/windows[i].length, i*imgHeight/windows.length)
-      if (red(c) + blue(c) + green(c) < brightLine) {
-        windows[i][j].turnOff();
+      if (i < windows_y_start || i >= windows_y_end ||
+          j < windows_x_start || j >= windows_x_end) {
+          // border
+          windows[i][j].turnOff();
+      } else {
+        let c = image.get(j*imgWidth/windows[i].length, i*imgHeight/windows.length);
+        if (alpha(c)/255 * (red(c) + blue(c) + green(c)) < brightLine) {
+          windows[i][j].turnOff();
+        } else {
+          windows[i][j].turnOn();
+        }
       }
     }
   }
@@ -322,7 +398,7 @@ function charToIndex(char) {
 function drawSlider() {
   let x = width - SLIDER_WIDTH / 2; 
   let topY = SLIDER_WIDTH / 2;
-  let bottomY = height - SLIDER_WIDTH / 2;
+  let bottomY = height*0.85 - SLIDER_WIDTH / 2;
 
   stroke(255);
   strokeWeight(5);
@@ -331,13 +407,12 @@ function drawSlider() {
   fill(255, 0, 0);
   let y = Math.sqrt( (sizeScale - MIN_SIZE_SCALE) / (MAX_SIZE_SCALE - MIN_SIZE_SCALE) ) * (bottomY - topY) + topY;
   circle(x, y, 10);
-  // circle(x, ( (Math.sqrt(sizeScale) - Math.sqrt(0.125)) / (Math.sqrt(2) - Math.sqrt(0.125)) ) * (bottomY - topY), 10);
 }
 
 function moveSlider() {
   let x = width - SLIDER_WIDTH / 2; 
   let topY = SLIDER_WIDTH / 2;
-  let bottomY = height - SLIDER_WIDTH / 2;
+  let bottomY = height*0.85 - SLIDER_WIDTH / 2;
 
   const cushion = 20;
   if (abs(mouseX - x) > cushion)
@@ -365,5 +440,49 @@ function moveSlider() {
       }
     }
     changeScale(newSizeScale);
+  }
+}
+
+function drawImageSlider() {
+  if (!img)
+    return;
+  let leftX = width - SLIDER_WIDTH * 0.95; 
+  let rightX = width - SLIDER_WIDTH * 0.1;
+  let topY = height*0.85 - SLIDER_WIDTH / 2 + SLIDER_WIDTH / 2;
+  let bottomY = height - SLIDER_WIDTH / 2;
+  let y = (topY + bottomY) / 2 + document.getElementById('upload-img').height*0.75;
+
+  stroke(255);
+  strokeWeight(5);
+  line(leftX, y, rightX, y);
+  let x;
+  if (imageThreshold) {
+    x = map(imageThreshold, 1, 764, rightX, leftX);
+  } else {
+    x = map(122, 1, 764, rightX, leftX);
+  }
+  fill(255, 0, 0);
+  circle(x, y, 10);
+}
+
+function moveImageSlider() {
+  if (!img)
+    return;
+  let leftX = width - SLIDER_WIDTH * 0.95; 
+  let rightX = width - SLIDER_WIDTH * 0.1;
+  let topY = height*0.85 - SLIDER_WIDTH / 2 + SLIDER_WIDTH / 2;
+  let bottomY = height - SLIDER_WIDTH / 2;
+  let y = (topY + bottomY) / 2 + document.getElementById('upload-img').height*0.75;
+
+  const cushion = 20;
+  if (abs(mouseY - y) > cushion)
+    return;
+  if (mouseX < leftX - cushion || mouseX > rightX + cushion)
+    return;
+  let x = constrain(mouseX, leftX, rightX);
+  let newImageThreshold = map(x, leftX, rightX, 764, 1);
+  if (imageThreshold != newImageThreshold) {
+    imageThreshold = newImageThreshold;
+    loadWindowsToImage(img, imageThreshold);
   }
 }

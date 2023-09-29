@@ -54,6 +54,15 @@
         background: rgb(90, 90, 90);
         color: #FDEA7F;
       }
+
+      #upload-img {
+        position: absolute;
+        cursor: pointer;
+        opacity: 0.8;
+      }
+      #upload-img:hover {
+        opacity: 0.9;
+      }
     </style>
   </head>
 
@@ -64,8 +73,12 @@
       <p>Use your keyboard to type a message into the windows</p>
       <p style="margin-bottom: 0;">Use the slider on the right to change the number of windows</p>
       <warning>Warning: slider may cause flashing.</warning>
+      <p style="margin-bottom: 0;">Press the upload icon to upload an image that will automatically be drawn on the windows</p>
       <button id="get-started-btn">Get Started!</button>
     </popup>
+    <img src="assets/upload.svg" title="Upload Image" id="upload-img" onclick="uploadImage();"/>
+    <input id="upload-input" type="file" accept="image/jpeg,image/png,image/jpg" style="display: none;"/>
+    <img src="" id="invisible-img" style="display:none;">
   </body>
     
   <body onmousedown=rightclick(); ></body>
