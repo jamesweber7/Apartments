@@ -11,8 +11,7 @@ const WINDOW_HEIGHT = 30;
 const GAP_WIDTH = 10;
 const GAP_HEIGHT = 25;
 
-// var sizeScale = 0.75;
-var sizeScale = 0.35;
+var sizeScale = 0.75;
 const MIN_SIZE_SCALE = 0.35;
 const MAX_SIZE_SCALE = 1.5;
 
