@@ -41,6 +41,8 @@ let charStack;
 
 const SLIDER_WIDTH = 80;
 
+var badAppleFrame = 0;
+
 function preload() {
   for (let i = 0; i < NUMBER_OF_ANIMATIONS; i++) {
     windowAnimations[i] = new WindowAnimation(i);
@@ -57,6 +59,10 @@ function setup() {
     document.getElementById('get-started-btn').onclick = () => {popup.remove();}
   }
   imageMode(CENTER);
+
+  document.getElementById('get-started-btn').addEventListener('click', () => {
+    runBadApple();
+  })
 
   specialCharIndexes = [];
   for (let key in pixelatedCharacters) {
@@ -485,4 +491,27 @@ function moveImageSlider() {
     imageThreshold = newImageThreshold;
     loadWindowsToImage(img, imageThreshold);
   }
+}
+
+function runBadApple() {
+  let badAppleFrameStr = badAppleFrame.toString();
+  while (badAppleFrameStr.length < 3)
+    badAppleFrameStr = '0' + badAppleFrameStr;
+  loadImage('bad_apple_images/bad_apple_'+badAppleFrameStr+'.png', (imag) => {
+    img = imag;
+    let startFrame = frameCount;
+    let numFrames = 12;
+    let endFrame = startFrame + numFrames;
+    continueRun();
+    function continueRun() {
+      if (frameCount > endFrame) {
+        loadWindowsToImage(imag, 382);
+        saveCanvas('bad_apple_'+badAppleFrame, 'jpg');
+        badAppleFrame ++;
+        runBadApple();
+      } else {
+        setTimeout(continueRun, 0);
+      }
+    }
+  });
 }
