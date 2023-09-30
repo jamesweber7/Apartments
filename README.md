@@ -1,5 +1,7 @@
 # Welcome to Apartments!
-This is a little project I did back in June 2021, and recently took out and added a couple features to.
+This is a little project I did back in June 2021, and I recently took it out and added a couple features to it.
+
+Click on a window, and its occupants will turn the light on or off. You can also type text onto the windows or upload an image.
 
 Check it out: [Apartments hosted by Amplify](https://master.d23l8orkgbv08u.amplifyapp.com/)
 
