@@ -1,3 +1,75 @@
+/*
+ *
+ * Run Video
+ * Configure the following variables (and a little bit of code) to run a video on Apartments
+ * 
+ */
+
+/* Change the following variables */
+
+// If source image indexes start at 0, change to 0
+// If you stop in the middle of running, change to the next file (beware duplicate file names)
+var videoFrameCount = 1;
+
+// Smaller sizeScale = more windows/higher resolution, but it's also slower to run.
+var sizeScale = 0.35; // be careful trying to make this too small
+
+// set the brightness threshold between black/white (between 1 and 764)
+const threshold = 382;
+
+// filepath for images from video
+const source_path = 'bad_apple_images/bad_apple_';
+const source_filetype = 'png';
+
+// set to false if you don't want to save images
+const save_video = true;
+
+/* If you're not saving the images, ignore the following */
+
+// change to what you want image filename to start as
+// will have the video frame count appended at end of string
+const result_filename = 'bad_apple_';
+const result_filetype = 'jpg';
+
+/* Modify this function to get the index matching your images (do they have leading zeroes? etc.) */
+function getImagePath(videoFrameCount) {
+  let source_image_index = videoFrameCount.toString();
+  while (source_image_index.length < 3)
+    source_image_index = '0' + source_image_index;
+  
+  return source_path+source_image_index+'.' + source_filetype;
+}
+
+function runVideoCapture() {
+
+  const image_path = getImagePath(videoFrameCount);
+
+  loadImage(image_path, (imag) => {
+    img = imag;
+    let startFrame = frameCount;
+    let numFrames = 12;
+    let endFrame = startFrame + numFrames;
+    continueRun();
+    function continueRun() {
+      if (frameCount > endFrame) {
+        loadWindowsToImage(imag, threshold);
+        if (save_video)
+          saveCanvas(result_filename+videoFrameCount, result_filetype);
+        videoFrameCount ++;
+        runVideoCapture();
+      } else {
+        setTimeout(continueRun, 0);
+      }
+    }
+  });
+}
+
+/*
+ *  
+ * Code
+ * 
+ */
+
 /* Get the documentElement (<html>) to display the page in fullscreen */
 var elem = document.documentElement;
 
@@ -11,8 +83,6 @@ const WINDOW_HEIGHT = 30;
 const GAP_WIDTH = 10;
 const GAP_HEIGHT = 25;
 
-// var sizeScale = 0.75;
-var sizeScale = 0.35;
 const MIN_SIZE_SCALE = 0.35;
 const MAX_SIZE_SCALE = 1.5;
 
@@ -41,8 +111,6 @@ let charStack;
 
 const SLIDER_WIDTH = 80;
 
-var badAppleFrame = 0;
-
 function preload() {
   for (let i = 0; i < NUMBER_OF_ANIMATIONS; i++) {
     windowAnimations[i] = new WindowAnimation(i);
@@ -61,7 +129,7 @@ function setup() {
   imageMode(CENTER);
 
   document.getElementById('get-started-btn').addEventListener('click', () => {
-    runBadApple();
+    runVideoCapture();
   })
 
   specialCharIndexes = [];
@@ -491,27 +559,4 @@ function moveImageSlider() {
     imageThreshold = newImageThreshold;
     loadWindowsToImage(img, imageThreshold);
   }
-}
-
-function runBadApple() {
-  let badAppleFrameStr = badAppleFrame.toString();
-  while (badAppleFrameStr.length < 3)
-    badAppleFrameStr = '0' + badAppleFrameStr;
-  loadImage('bad_apple_images/bad_apple_'+badAppleFrameStr+'.png', (imag) => {
-    img = imag;
-    let startFrame = frameCount;
-    let numFrames = 12;
-    let endFrame = startFrame + numFrames;
-    continueRun();
-    function continueRun() {
-      if (frameCount > endFrame) {
-        loadWindowsToImage(imag, 382);
-        saveCanvas('bad_apple_'+badAppleFrame, 'jpg');
-        badAppleFrame ++;
-        runBadApple();
-      } else {
-        setTimeout(continueRun, 0);
-      }
-    }
-  });
 }
