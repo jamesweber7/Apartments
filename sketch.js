@@ -244,36 +244,6 @@ function mouseDragged() {
 function loadWindowsToImage(image, brightLine=undefined) {
   let imgWidth = image.width;
   let imgHeight = image.height;
-  let imgAspectRatio = imgWidth / imgHeight;
-
-  let screenWidth = xIncrement * windows[0].length;
-  let screenHeight = yIncrement * windows.length;
-  let screenAspectRatio = screenWidth / screenHeight;
-
-  let windows_x_start, windows_x_end;
-  let windows_y_start, windows_y_end;
-  if (imgAspectRatio < screenAspectRatio) {
-    windows_y_start = 0;
-    windows_y_end = windows.length;
-
-    let num_windows_x = floor(windows[0].length / imgAspectRatio);
-    if (num_windows_x % 2 != windows[0].length % 2)
-      num_windows_x ++;
-    
-    windows_x_start = windows[0].length / 2 - num_windows_x / 2;
-    windows_x_end = windows[0].length / 2 + num_windows_x / 2;
-  } else {
-    windows_x_start = 0;
-    windows_x_end = windows[0].length;
-
-    let num_windows_y = floor(windows.length / imgAspectRatio);
-    if (num_windows_y % 2 != windows.length % 2)
-      num_windows_y ++;
-    
-    windows_y_start = windows.length / 2 - num_windows_y / 2;
-    windows_y_end = windows.length / 2 + num_windows_y / 2;
-  }
-
 
   if (!brightLine) {
     let sum = 0;
@@ -287,14 +257,73 @@ function loadWindowsToImage(image, brightLine=undefined) {
     }
     brightLine = sum / n;
   }
-  for (let i = 0; i < windows.length; i++) {
-    for (let j = 0; j < windows[i].length; j++) {
-      if (i < windows_y_start || i >= windows_y_end ||
-          j < windows_x_start || j >= windows_x_end) {
-          // border
+
+  let imgAspectRatio = imgWidth / imgHeight;
+
+  let screenWidth = xIncrement * windows[0].length;
+  let screenHeight = yIncrement * windows.length;
+  let screenAspectRatio = screenWidth / screenHeight;
+
+  let windows_x_start, windows_x_end;
+  let windows_y_start, windows_y_end;
+  if (imgAspectRatio < screenAspectRatio) {
+    windows_y_start = 0;
+    windows_y_end = windows.length;
+
+    let num_windows_x = floor(windows[0].length / screenAspectRatio * imgAspectRatio);
+    if (num_windows_x % 2 != windows[0].length % 2)
+      num_windows_x ++;
+    
+    windows_x_start = windows[0].length / 2 - num_windows_x / 2;
+    windows_x_end = windows[0].length / 2 + num_windows_x / 2;
+
+    let img_windows_width = windows_x_end - windows_x_start;
+    // left border
+    for (let i = 0; i < windows.length; i++)
+      for (let j = 0; j < windows_x_start; j++)
+        windows[i][j].turnOff();
+    // right border
+    for (let i = 0; i < windows.length; i++)
+      for (let j = windows_x_end; j < windows[i].length; j++)
+        windows[i][j].turnOff();
+    // body
+    for (let i = 0; i < windows.length; i++) {
+      for (let j = windows_x_start; j < windows_x_end; j++) {
+        let x_ratio = (j - windows_x_start) / img_windows_width;
+        let c = image.get(imgWidth * x_ratio, i*imgHeight/windows.length);
+        if (alpha(c)/255 * (red(c) + blue(c) + green(c)) < brightLine) {
           windows[i][j].turnOff();
-      } else {
-        let c = image.get(j*imgWidth/windows[i].length, i*imgHeight/windows.length);
+        } else {
+          windows[i][j].turnOn();
+        }
+      }
+    }
+  } else {
+    windows_x_start = 0;
+    windows_x_end = windows[0].length;
+
+    let num_windows_y = floor(windows.length / imgAspectRatio * screenAspectRatio);
+    if (num_windows_y % 2 != windows.length % 2)
+      num_windows_y ++;
+    
+    windows_y_start = windows.length / 2 - num_windows_y / 2;
+    windows_y_end = windows.length / 2 + num_windows_y / 2;
+
+    let img_windows_height = windows_y_end - windows_y_start;
+
+    // top border
+    for (let i = 0; i < windows_y_start; i++)
+      for (let j = 0; j < windows[i].length; j++)
+        windows[i][j].turnOff();
+    // bottom border
+    for (let i = windows_y_end; i < windows.length; i++)
+      for (let j = 0; j < windows[i].length; j++)
+        windows[i][j].turnOff();
+    // body
+    for (let i = windows_y_start; i < windows_y_end; i++) {
+      for (let j = 0; j < windows[i].length; j++) {
+        let y_ratio = (i - windows_y_start) / img_windows_height;
+        let c = image.get(j*imgWidth/windows[i].length, imgHeight * y_ratio);
         if (alpha(c)/255 * (red(c) + blue(c) + green(c)) < brightLine) {
           windows[i][j].turnOff();
         } else {
